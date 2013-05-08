@@ -1,0 +1,69 @@
+h1. What it is
+
+A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com websites. Latest version supports Jekyll 1.0.0.
+
+
+h1. Installation
+
+1. Download this repository
+2. Put the files in your jekyll installation
+3. Se the following variables in @_rake_configuration.yml@:
+
+* @$deploy_url@ the url where your website will live. For instance @http://www.example.com/a/b@.
+* @$deploy_dir@ the directory where your sources live (it can be an ssh address). For instance: @ssh:user@example.com:/somedir/@
+* @$post_dir@ the directory used for posts. For instance: @_posts@
+
+*Note.* I use two separate files to keep the @Rakefile@ independent of the configuration; it helps when you are managing more than one website with jekyll.  However, if you prefer, you can forget about the @_rake_configuration.yml@ file and set the variables directly in the @Rakefile@.
+
+
+h1. Main Advantages
+
+*The tasks manage URLs for deployment and local preview.  This simplifies deployment in a suburi.*
+
+More in details: sometime it is difficult to use relative URLs in your Jekyll files (think, e.g., a reference to css files in a layout file used for posts and other pages living at different levels of nesting).
+
+One solution is using the variable @{{site.url}}@, which can be set in the @_config.yml@ file.  By prepending @{{site.url}}@ to the relevant links, URLs are made absolute and are guaranteed to work, no matter where your HTML file will live.
+
+However, using @{{site.url}}@ can break the possibilit of locally previewing your website (e.g. using the @jekyll serve@ command).  Consider the case of deploying to a suburi. (Note: it might as well be that I don't fully understand the deployment/preview options offered by Jekyll, but this is another matter).
+
+The rakefile sets the @url@ variable in the @_config.yml@ using two different settings for local preview and deployment, thus allowing to preview changes locally (@url@ is set to @http://localhost:4000@) before deploying (the deploy command, in fact, sets the @url@ to the @$deploy_url@).
+
+Other tasks can simplify your daily life with Jekyll (e.g. creating a post, checking links).
+
+
+h1. Typical Usage Scenario
+
+<pre>
+rake preview
+rake deploy
+</pre>
+
+
+h1. Commands
+
+The commands made available are:
+
+<pre>
+rake build                           # Build for deployment (but do not deploy)
+rake build_static                    # Static build (build using filesystem)
+rake check_links                     # Check links for site already running on localhost:4000
+rake clean                           # Clean up generated site
+rake create_post[post,date,content]  # Create a post
+rake deploy                          # Build and deploy to remote server
+rake post_changes                    # Create a post with all changes since last deploy
+rake preview                         # Preview on local machine (server with --auto)
+</pre>
+
+
+h1. Caveats
+
+If you do not put the following directive in your @_config.yml@ file:
+
+bc. exclude: ['Rakefile']
+
+the @Rakefile@ will end up in your website.  (It shouldn't do any harm if you publish it.)
+
+
+h1. License
+
+Distributed under the terms of the "MIT License":http://opensource.org/licenses/MIT
