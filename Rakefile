@@ -1,12 +1,14 @@
 task :default => :preview
 
 #
-# Load the values of
+# Set the values of
 #
-# $deploy_url = "http://www.example.org/dir/subdir" # where the site lives
+# $deploy_url = "http://www.example.com/somedir"    # where the system will live
 # $deploy_dir = "user@host:~/some-location/"        # where the sources live
 # $post_dir   = "_posts/"                           # where posts are created
-
+#
+# ... or load them from a file, e.g.:
+#
 load '_rake-configuration.rb'
 
 #
@@ -20,12 +22,20 @@ end
 
 desc 'Preview on local machine (server with --auto)'
 task :preview => :clean do
-  jekyll('--server --auto --url http://localhost:4000')
+  set_url('http://localhost:4000')
+  jekyll('serve --watch')
+end
+
+desc 'Static build (build using filesystem)'
+task :build_static => :clean do
+  set_url(Dir.getwd + "/_site")
+  jekyll('build')
 end
 
 desc 'Build for deployment (but do not deploy)'
 task :build => :clean do
-  jekyll("--url #{$deploy_url}")
+  set_url($deploy_url)
+  jekyll('build')
 end
 
 desc 'Build and deploy to remote server'
@@ -154,7 +164,21 @@ def cleanup
   sh 'rm -rf _site'
 end
 
-def jekyll(opts = '')
-  sh 'jekyll ' + opts
+def jekyll(directives = '')
+  sh 'jekyll ' + directives
+end
+
+# set the url in the configuration file
+def set_url(url)
+  config_filename = "_config.yml"
+
+  text = File.read(config_filename)
+  url_directive = Regexp.new(/url: .*$/)
+  if text.match(url_directive)
+    puts = text.gsub(url_directive, "url: #{url}")
+  else
+    puts = text + "\nurl: #{url}"
+  end
+  File.open(config_filename, "w") { |file| file << puts }
 end
 
