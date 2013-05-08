@@ -7,11 +7,8 @@ h1. Installation
 
 1. Download this repository
 2. Put the files in your jekyll installation
-3. Se the following variables in @_rake_configuration.yml@:
-
-* @$deploy_url@ the url where your website will live. For instance @http://www.example.com/a/b@.
-* @$deploy_dir@ the directory where your sources live (it can be an ssh address). For instance: @ssh:user@example.com:/somedir/@
-* @$post_dir@ the directory used for posts. For instance: @_posts@
+3. Se the variables in @_rake_configuration.yml@
+4. Start using it!
 
 *Note.* I use two separate files to keep the @Rakefile@ independent of the configuration; it helps when you are managing more than one website with jekyll.  However, if you prefer, you can forget about the @_rake_configuration.yml@ file and set the variables directly in the @Rakefile@.
 
