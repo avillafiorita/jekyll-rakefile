@@ -1,7 +1,8 @@
 task :default => :preview
 
 #
-# Set the values of
+# If you want the script to manage the variable {{site.url}} for you,
+# set the values of
 #
 # $deploy_url = "http://www.example.com/somedir"    # where the system will live
 # $deploy_dir = "user@host:~/some-location/"        # where the sources live
@@ -170,15 +171,16 @@ end
 
 # set the url in the configuration file
 def set_url(url)
-  config_filename = "_config.yml"
-
-  text = File.read(config_filename)
-  url_directive = Regexp.new(/url: .*$/)
-  if text.match(url_directive)
-    puts = text.gsub(url_directive, "url: #{url}")
-  else
-    puts = text + "\nurl: #{url}"
+  if $deploy_url != nil
+    config_filename = "_config.yml"
+    text = File.read(config_filename)
+    url_directive = Regexp.new(/^url: .*$/)
+    if text.match(url_directive)
+      puts = text.gsub(url_directive, "url: #{url}")
+    else
+      puts = text + "\nurl: #{url}"
+    end
+    File.open(config_filename, "w") { |file| file << puts }
   end
-  File.open(config_filename, "w") { |file| file << puts }
-end
+end 
 

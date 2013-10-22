@@ -1,13 +1,13 @@
 h1. What it is
 
-A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com websites. Latest version supports Jekyll 1.0.0.
+A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com websites. The latest version supports Jekyll 1.0.0.
 
 
 h1. Installation
 
 1. Download this repository
 2. Put the files in your jekyll installation
-3. Se the variables in @_rake_configuration.yml@
+3. Set the variables in @_rake_configuration.yml@
 4. Start using it!
 
 *Note.* I use two separate files to keep the @Rakefile@ independent of the configuration; it helps when you are managing more than one website with jekyll.  However, if you prefer, you can forget about the @_rake_configuration.yml@ file and set the variables directly in the @Rakefile@.
@@ -15,17 +15,18 @@ h1. Installation
 
 h1. Main Advantages
 
-*The tasks manage URLs for deployment and local preview.  This simplifies deployment in a suburi.*
+* Ready made tasks for common operations (e.g. creating a post, checking links).
+* Optional automatic update of @_config.yml@ so that @site.url@ matches the correct URL for deployment and preview.
 
-More in details: sometime it is difficult to use relative URLs in your Jekyll files (think, e.g., a reference to css files in a layout file used for posts and other pages living at different levels of nesting).
+*Some more details about the management of @url@ in @_config.yml@.*  Sometime it is difficult to use relative URLs in your Jekyll files.  Think, e.g., a reference to css files in a layout file which is used for pages living at different levels of nesting.
 
-One solution is using the variable @{{site.url}}@, which can be set in the @_config.yml@ file.  By prepending @{{site.url}}@ to the relevant links, URLs are made absolute and are guaranteed to work, no matter where your HTML file will live.
+To avoid the problem, one solution is using the variable @{{site.url}}@ for the links in your pages.  This variable has whatever value you give to the @url@ directive in @_config.yml@.  By prepending @{{site.url}}@ to the relevant links, all URLs can be made absolute and are guaranteed to work, no matter where your HTML file will live.
 
-However, using @{{site.url}}@ can break the possibilit of locally previewing your website (e.g. using the @jekyll serve@ command).  Consider the case of deploying to a suburi. (Note: it might as well be that I don't fully understand the deployment/preview options offered by Jekyll, but this is another matter).
+However, using @{{site.url}}@ can break the possibility of locally previewing your website with the @jekyll serve@ command.  In fact, the URLs generated will still use the value of @{{site.url}}@ and point to the wrong files, namely those on the server, rather than those modified locally.
 
-The rakefile sets the @url@ variable in the @_config.yml@ using two different settings for local preview and deployment, thus allowing to preview changes locally (@url@ is set to @http://localhost:4000@) before deploying (the deploy command, in fact, sets the @url@ to the @$deploy_url@).
+The rakefile can help to automatically switch the value of the @url@ variable in the @_config.yml@ file.  In particular, if you set the @$deploy_url@ variable in the Rakefile (@deploy@, @preview@, @build_static@, and @build@) will modify the value of the @url@ directive in @_config.yml@.  The variable will be set to @localhost:4000@ when previewing and to @$deploy_url@ when deploying.
 
-Other tasks can simplify your daily life with Jekyll (e.g. creating a post, checking links).
+*This behavior can be disabled. If you do not want the Rakefile to modify @_config.yml@ leave the variable @$deploy_url@ undefined.*
 
 
 h1. Typical Usage Scenario
@@ -34,7 +35,6 @@ h1. Typical Usage Scenario
 rake preview
 rake deploy
 </pre>
-
 
 h1. Commands
 
