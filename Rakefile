@@ -8,9 +8,15 @@ task :default => :preview
 # $deploy_dir = "user@host:~/some-location/"        # where the sources live
 # $post_dir   = "_posts/"                           # where posts are created
 #
+# If your project is based on compass and you want compass to be invoked
+# by the script, set the $compass variable to true
+#
+#   $compass = false
+#
 # ... or load them from a file, e.g.:
 #
 load '_rake-configuration.rb'
+
 
 #
 # Tasks start here
@@ -24,18 +30,22 @@ end
 desc 'Preview on local machine (server with --auto)'
 task :preview => :clean do
   set_url('http://localhost:4000')
+  compass('compile') # so that we are sure sass has been compiled before we run the server
+  compass('watch &')
   jekyll('serve --watch')
 end
 
 desc 'Static build (build using filesystem)'
 task :build_static => :clean do
   set_url(Dir.getwd + "/_site")
+  compass('compile')
   jekyll('build')
 end
 
 desc 'Build for deployment (but do not deploy)'
 task :build => :clean do
   set_url($deploy_url)
+  compass('compile')
   jekyll('build')
 end
 
@@ -55,7 +65,7 @@ task :create_post, [:post, :date, :content] do |t, args|
   end
 
   post_title= args.post 
-  post_date= args.date || Time.new.strftime("%Y-%m-%d %H:%M:%S")
+  post_date= args.date || Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
 
   # remove the time from post_date (the filename does not support it)
   filename = post_date[0..9] + "-" + post_title.gsub(' ', '_') + ".textile"
@@ -163,10 +173,15 @@ end
 
 def cleanup
   sh 'rm -rf _site'
+  compass('clean')
 end
 
 def jekyll(directives = '')
   sh 'jekyll ' + directives
+end
+
+def compass(command = 'compile')
+  (sh 'compass ' + command) if $compass
 end
 
 # set the url in the configuration file

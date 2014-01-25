@@ -1,6 +1,8 @@
 h1. What it is
 
-A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com websites. The latest version supports Jekyll 1.0.0.
+A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com websites. The latest version supports Jekyll >= 1.0.0.
+
+The rakefile also manages compilation with compass and watching compass files (when previewing the website).
 
 
 h1. Installation
