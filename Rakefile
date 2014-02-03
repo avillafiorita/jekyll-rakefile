@@ -67,8 +67,14 @@ task :create_post, [:post, :date, :content] do |t, args|
   post_title= args.post 
   post_date= args.date || Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
 
-  # remove the time from post_date (the filename does not support it)
-  filename = post_date[0..9] + "-" + post_title.gsub(' ', '_') + ".textile"
+  def slugify (title)
+    # strip characters and whitespace to create valid filenames, also lowercase
+    return title.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
+  end
+
+  extension = ".textile"
+
+  filename = post_date[0..9] +"-"+ slugify( post_title ) + extension
 
   # generate a unique filename appending a number
   i = 1
