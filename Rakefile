@@ -1,22 +1,43 @@
 task :default => :preview
 
+# CONFIGURATION VARIABLES
 #
-# If you want the script to manage the variable {{site.url}} for you,
-# set the values of
+# MANAGING DEPLOYMENT.
+# These variables specify where to deploy your website:
 #
 # $deploy_url = "http://www.example.com/somedir"    # where the system will live
 # $deploy_dir = "user@host:~/some-location/"        # where the sources live
-# $post_dir   = "_posts/"                           # where posts are created
 #
+# PREVIEWING
 # If your project is based on compass and you want compass to be invoked
 # by the script, set the $compass variable to true
 #
-#   $compass = false
+# $compass = false
+#
+# MANAGING POSTS
+#
+# Extension for new posts (defaults to .textile, if not set)
+#
+# $post_ext = ".textile"  # default
+# $post_ext = ".md"       # if you prefer markdown
+#
+# Location of new posts (defaults to "_posts/", if not set).
+# Please, terminate with a slash:
+#
+# $post_dir = "_posts/"
 #
 # ... or load them from a file, e.g.:
 #
 load '_rake-configuration.rb'
 
+#
+# --- NO NEED TO TOUCH ANYTHING BELOW THIS LINE ---
+#
+
+# Specify default values for variables not set by the user
+
+$post_ext ||= ".textile"
+$post_dir ||= "_posts/"
 
 #
 # Tasks start here
@@ -72,9 +93,7 @@ task :create_post, [:post, :date, :content] do |t, args|
     return title.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
   end
 
-  extension = ".textile"
-
-  filename = post_date[0..9] +"-"+ slugify( post_title ) + extension
+  filename = post_date[0..9] +"-"+ slugify( post_title ) + $post_ext
 
   # generate a unique filename appending a number
   i = 1
