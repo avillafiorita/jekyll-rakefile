@@ -80,7 +80,7 @@ desc 'Create a post'
 task :create_post, [:post, :date, :content] do |t, args|
   if args.post == nil or 
      (args.date and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
-    puts "Usage: create post TITLE [DATE]"
+    puts "Usage: create_post TITLE [DATE]"
     puts "Date is in the form: Y-m-d"
     exit 1
   end
