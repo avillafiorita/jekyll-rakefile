@@ -55,6 +55,7 @@ task :preview => :clean do
   compass('watch &')
   jekyll('serve --watch')
 end
+task :serve => :preview
 
 desc 'Static build (build using filesystem)'
 task :build_static => :clean do
@@ -65,6 +66,15 @@ end
 
 desc 'Build for deployment (but do not deploy)'
 task :build => :clean do
+  if rake_running then
+    puts "\n\nWarning! An instance of rake seems to be running (it might not be *this* Rakefile, however).\n"
+    puts "Building while running other tasks (e.g., preview), might create a website with broken links.\n\n"
+    puts "Are you sure you want to continue? [Y|n]"
+
+    ans = STDIN.gets.chomp
+    break if ans != 'Y' 
+  end
+
   set_url($deploy_url)
   compass('compile')
   jekyll('build')
@@ -77,16 +87,34 @@ task :deploy => :build do
 end
 
 desc 'Create a post'
-task :create_post, [:post, :date, :content] do |t, args|
-  if args.post == nil or 
-     (args.date and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
-    puts "Usage: create post TITLE [DATE]"
-    puts "Date is in the form: Y-m-d"
+task :create_post, [:title, :date, :category, :content] do |t, args|
+  if args.title == nil then
+    puts "Error! title is empty"
+    puts "Usage: create_post[title,date,category,content]"
+    puts "DATE and CATEGORY are optional"
+    exit 1
+  end
+  if (args.date != nil and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
+    puts "Error: date not understood"
+    puts "Usage: create_post[title,date,category,content]"
+    puts "DATE and CATEGORY are optional"
     exit 1
   end
 
-  post_title= args.post 
+  post_title= args.title
   post_date= args.date || Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+  # the destination directory is <<category>>/$post_dir, if category is non-nil
+  # and the directory exists; $post_dir otherwise (a category tag is added in
+  # the post body, in this case)
+  category = args.category
+  if category and Dir.exists?(category + "/" + $post_dir) then
+    post_dir = category + "/" + $post_dir
+    yaml_cat = nil
+  else
+    post_dir = $post_dir
+    yaml_cat = "category: #{category}\n"
+  end
 
   def slugify (title)
     # strip characters and whitespace to create valid filenames, also lowercase
@@ -97,27 +125,29 @@ task :create_post, [:post, :date, :content] do |t, args|
 
   # generate a unique filename appending a number
   i = 1
-  while File.exists?($post_dir + filename) do
+  while File.exists?(post_dir + filename) do
     filename = post_date[0..9] + "-" + 
                post_title.gsub(' ', '_') + "-" + i.to_s + 
                ".textile"
     i += 1
   end
 
-  # the if is not really necessary anymore
-  if not File.exists?($post_dir + filename) then
-      File.open($post_dir + filename, 'w') do |f|
+  # the condition is not really necessary anymore (since the previous
+  # loop ensures the file does not exist)
+  if not File.exists?(post_dir + filename) then
+      File.open(post_dir + filename, 'w') do |f|
         f.puts "---"
         f.puts "title: \"#{post_title}\""
         f.puts "layout: default"
+        f.puts yaml_cat if yaml_cat != nil
         f.puts "date: #{post_date}"
         f.puts "---"
         f.puts args.content if args.content != nil
       end  
 
-      puts "Post created under \"#{$post_dir}#{filename}\""
+      puts "Post created under \"#{post_dir}#{filename}\""
 
-      sh "open \"#{$post_dir}#{filename}\"" if args.content == nil
+      sh "open \"#{post_dir}#{filename}\"" if args.content == nil
   else
     puts "A post with the same name already exists. Aborted."
   end
@@ -135,7 +165,7 @@ task :post_changes do |t, args|
   end 
   content << "</ul>\n"
 
-  Rake::Task["create_post"].invoke("Recent Changes", Time.new.strftime("%Y-%m-%d %H:%M:%S"), content)
+  Rake::Task["create_post"].invoke("Recent Changes", Time.new.strftime("%Y-%m-%d %H:%M:%S"), nil, content)
 end
 
 #
@@ -214,6 +244,12 @@ end
 
 def compass(command = 'compile')
   (sh 'compass ' + command) if $compass
+end
+
+# check if there is another rake task running
+# (in addition to this one!)
+def rake_running
+  `ps | grep 'rake' | grep -v 'grep' | wc -l`.to_i > 1
 end
 
 # set the url in the configuration file
