@@ -47,7 +47,7 @@ rake build                           # Build for deployment (but do not deploy)
 rake build_static                    # Static build (build using filesystem)
 rake check_links                     # Check links for site already running on localhost:4000
 rake clean                           # Clean up generated site
-rake create_post[post,date,content]  # Create a post
+rake create_post[post,date,category,content]  # Create a post
 rake deploy                          # Build and deploy to remote server
 rake post_changes                    # Create a post with all changes since last deploy
 rake preview                         # Preview on local machine (server with --auto)
