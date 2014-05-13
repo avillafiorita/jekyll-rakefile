@@ -34,7 +34,7 @@ load '_rake-configuration.rb'
 # --- NO NEED TO TOUCH ANYTHING BELOW THIS LINE ---
 #
 
-# Specify default values for variables not set by the user
+# Specify default values for variables NOT set by the user
 
 $post_ext ||= ".textile"
 $post_dir ||= "_posts/"
@@ -48,6 +48,7 @@ task :clean do
   cleanup
 end
 
+
 desc 'Preview on local machine (server with --auto)'
 task :preview => :clean do
   set_url('http://localhost:4000')
@@ -57,12 +58,14 @@ task :preview => :clean do
 end
 task :serve => :preview
 
+
 desc 'Static build (build using filesystem)'
 task :build_static => :clean do
   set_url(Dir.getwd + "/_site")
   compass('compile')
   jekyll('build')
 end
+
 
 desc 'Build for deployment (but do not deploy)'
 task :build => :clean do
@@ -80,24 +83,28 @@ task :build => :clean do
   jekyll('build')
 end
 
+
 desc 'Build and deploy to remote server'
 task :deploy => :build do
   sh "rsync -avz --delete _site/ #{$deploy_dir}"
   File.open("_last_deploy.txt", 'w') {|f| f.write(Time.new) }
 end
 
+
 desc 'Create a post'
-task :create_post, [:title, :date, :category, :content] do |t, args|
+task :create_post, [:date, :title, :category, :content] do |t, args|
   if args.title == nil then
     puts "Error! title is empty"
-    puts "Usage: create_post[title,date,category,content]"
+    puts "Usage: create_post[date,title,category,content]"
     puts "DATE and CATEGORY are optional"
+    puts "DATE is in the form: YYYY-MM-DD; use nil or empty for today's date"
     exit 1
   end
-  if (args.date != nil and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
+  if (args.date != nil and args.date != "" and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
     puts "Error: date not understood"
-    puts "Usage: create_post[title,date,category,content]"
+    puts "Usage: create_post[date,title,category,content]"
     puts "DATE and CATEGORY are optional"
+    puts "DATE is in the form: YYYY-MM-DD; use nil or empty for today's date"
     exit 1
   end
 
@@ -108,8 +115,8 @@ task :create_post, [:title, :date, :category, :content] do |t, args|
   # and the directory exists; $post_dir otherwise (a category tag is added in
   # the post body, in this case)
   category = args.category
-  if category and Dir.exists?(category + "/" + $post_dir) then
-    post_dir = category + "/" + $post_dir
+  if category and Dir.exists?(File.join(category, "_posts")) then
+    post_dir = File.join(category, "_posts")
     yaml_cat = nil
   else
     post_dir = $post_dir
@@ -154,38 +161,45 @@ task :create_post, [:title, :date, :category, :content] do |t, args|
   # puts "You might want to: edit #{$post_dir}#{filename}"
 end
 
-desc 'Create a post with all changes since last deploy'
-task :post_changes do |t, args|
-  content = "Recent changes on the website:\n\n"
-  content << "<ul>\n"
-  IO.popen('find * -newer _last_deploy.txt') do |io| 
-    while (line = io.gets) do
-      content << myprocess(line)
-    end
-  end 
-  content << "</ul>\n"
 
-  Rake::Task["create_post"].invoke("Recent Changes", Time.new.strftime("%Y-%m-%d %H:%M:%S"), nil, content)
+desc 'Create a post listing all changes since last deploy'
+task :post_changes do |t, args|
+  content = list_file_changed
+  Rake::Task["create_post"].invoke(Time.new.strftime("%Y-%m-%d %H:%M:%S"), "Recent Changes", nil, content)
 end
+
+
+desc 'Show the file changed since last deploy to stdout'
+task :list_changes do |t, args|
+  content = list_file_changed
+  puts content
+end
+
 
 #
 # support functions for generating list of changed files
 #
-def myprocess(filename)
-  new_filename = filename[0, filename.length - 1]
-  if file_matches(new_filename) then
-    puts new_filename
-    "<li><a href=\"{{site.url}}/#{file_change_ext(new_filename, ".html")}\">#{new_filename}</a></li>\n"
-  else
-    ""
-  end
+
+def list_file_changed
+  content = "Files changed since last deploy:\n"
+  IO.popen('find * -newer _last_deploy.txt -type f') do |io| 
+    while (line = io.gets) do
+      filename = line.chomp
+      if user_visible(filename) then
+        content << "* \"#{filename}\":{{site.url}}/#{file_change_ext(filename, ".html")}\n"
+      end
+    end
+  end 
+  content
 end
 
-EXCLUSION_REGEXPS = [/.*~/, /_.*/, /javascripts/, /stylesheets/, /Rakefile/, /Gemfile/, /s[ca]ss/, /.*\.css/, /.*.js/]
+# this is the list of files we do not want to show in changed files
+EXCLUSION_LIST = [/.*~/, /_.*/, "javascripts?", "js", /stylesheets?/, "css", "Rakefile", "Gemfile", /s[ca]ss/, /.*\.css/, /.*.js/, "bower_components", "config.rb"]
 
-def file_matches(filename)
-  output = EXCLUSION_REGEXPS.each.collect { |x| filename.index(x) != nil }.include?(true)
-  not output
+# return true if filename is "visible" to the user (e.g., it is not javascript, css, ...)
+def user_visible(filename)
+  exclusion_list = Regexp.union(EXCLUSION_LIST)
+  not filename.match(exclusion_list)
 end 
 
 def file_change_ext(filename, newext)
@@ -195,6 +209,7 @@ def file_change_ext(filename, newext)
     filename
   end
 end
+
 
 desc 'Check links for site already running on localhost:4000'
 task :check_links do
@@ -233,37 +248,54 @@ task :check_links do
   end
 end
 
+
+#
+# General support functions
+#
+
+# remove generated site
 def cleanup
   sh 'rm -rf _site'
   compass('clean')
 end
 
+# launch jekyll
 def jekyll(directives = '')
   sh 'jekyll ' + directives
 end
 
+# launch compass
 def compass(command = 'compile')
   (sh 'compass ' + command) if $compass
 end
 
-# check if there is another rake task running
-# (in addition to this one!)
+# check if there is another rake task running (in addition to this one!)
 def rake_running
   `ps | grep 'rake' | grep -v 'grep' | wc -l`.to_i > 1
 end
 
-# set the url in the configuration file
+# set the url variable in _config.yml (for deployment)
+# set also the display_path variable if present (used by japr)
 def set_url(url)
   if $deploy_url != nil
     config_filename = "_config.yml"
     text = File.read(config_filename)
     url_directive = Regexp.new(/^url: .*$/)
     if text.match(url_directive)
-      puts = text.gsub(url_directive, "url: #{url}")
+      text = text.gsub(url_directive, "url: #{url}")
     else
-      puts = text + "\nurl: #{url}"
+      text = text + "\nurl: #{url}"
     end
-    File.open(config_filename, "w") { |file| file << puts }
+
+    # for japr (Jekyll asset bundler)
+    display_path_directive = Regexp.new(/^[ ]+display_path: .*$/)
+    if text.match(display_path_directive)
+      # if the deploy url has a subdirectory, set display_path to the subdir + assets
+      path = url.match(/http:\/\/[^\/]+\//) ? File.join(url.gsub(/http:\/\/[^\/]+\//, ""), "assets") : nil
+      text = text.gsub(display_path_directive, "  display_path: #{path}")
+    end
+
+    File.open(config_filename, "w") { |file| file << text }
   end
 end 
 

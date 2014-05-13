@@ -17,7 +17,7 @@ h1. Installation
 
 h1. Main Advantages
 
-* Ready made tasks for common operations (e.g. creating a post, checking links).
+* Ready-made tasks for common operations (e.g. creating a post, checking links).
 * Optional automatic update of @_config.yml@ so that @site.url@ matches the correct URL for deployment and preview.
 
 *Some more details about the management of @url@ in @_config.yml@.*  Sometime it is difficult to use relative URLs in your Jekyll files.  Think, e.g., a reference to css files in a layout file which is used for pages living at different levels of nesting.
@@ -43,14 +43,15 @@ h1. Commands
 The commands made available are:
 
 <pre>
-rake build                           # Build for deployment (but do not deploy)
-rake build_static                    # Static build (build using filesystem)
-rake check_links                     # Check links for site already running on localhost:4000
-rake clean                           # Clean up generated site
-rake create_post[post,date,category,content]  # Create a post
-rake deploy                          # Build and deploy to remote server
-rake post_changes                    # Create a post with all changes since last deploy
-rake preview                         # Preview on local machine (server with --auto)
+rake build                                     # Build for deployment (but do not deploy)
+rake build_static                              # Static build (build using filesystem)
+rake check_links                               # Check links for site already running on localhost:4000
+rake clean                                     # Clean up generated site
+rake create_post[title,date,category,content]  # Create a post
+rake deploy                                    # Build and deploy to remote server
+rake list_changes                              # Print the file changed since last deploy
+rake post_changes                              # Create a post listing all changes since last deploy
+rake preview                                   # Preview on local machine (server with --auto)
 </pre>
 
 
