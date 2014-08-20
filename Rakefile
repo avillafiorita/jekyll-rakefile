@@ -1,34 +1,52 @@
+# coding: utf-8
 task :default => :preview
 
-# CONFIGURATION VARIABLES
-#
-# MANAGING DEPLOYMENT.
-# These variables specify where to deploy your website:
-#
-# $deploy_url = "http://www.example.com/somedir"    # where the system will live
-# $deploy_dir = "user@host:~/some-location/"        # where the sources live
+# CONFIGURATION VARIABLES (on top of those defined by Jekyll in _config(_deploy).yml)
 #
 # PREVIEWING
 # If your project is based on compass and you want compass to be invoked
 # by the script, set the $compass variable to true
 #
-# $compass = false
+# $compass = false # default
+# $compass = true  # if you wish to run compass as well
+#
+# Notice that Jekyll 2.0 supports sass natively, so you might want to have a look
+# at the functions provided by Jekyll instead of using the functions provided here.
 #
 # MANAGING POSTS
-#
-# Extension for new posts (defaults to .textile, if not set)
+# Set the extension for new posts (defaults to .textile, if not set)
 #
 # $post_ext = ".textile"  # default
 # $post_ext = ".md"       # if you prefer markdown
 #
-# Location of new posts (defaults to "_posts/", if not set).
+# Set the location of new posts (defaults to "_posts/", if not set).
 # Please, terminate with a slash:
 #
 # $post_dir = "_posts/"
 #
+# MANAGING MULTI-USER WORK
+# If you are using git to manage the sources, you might want to check the repository
+# is up-to-date with the remote branch, before deploying.  In fact---when this is not the
+# case---you end up deploying a previous version of your website.
+#
+# The following variable determines whether you want to check the git repository is
+# up-to-date with the remote branch and, if not, issue a warning.
+#
+# $git_check = true
+#
+# It is safe to leave the variable set to true, even if you do not manage your sources
+# with git.
+#
+# The following variable controls whether we push to the remote branch after deployment,
+# committing all uncommitted changes
+#
+# $git_autopush = false
+#
+# If set to true, the sources have to be managed by git or an error message will be issued.
+#
 # ... or load them from a file, e.g.:
 #
-load '_rake-configuration.rb'
+load '_rake-configuration.rb' if File.exist?('_rake-configuration.rb')
 
 #
 # --- NO NEED TO TOUCH ANYTHING BELOW THIS LINE ---
@@ -38,6 +56,8 @@ load '_rake-configuration.rb'
 
 $post_ext ||= ".textile"
 $post_dir ||= "_posts/"
+$git_check ||= true
+$git_autopush ||= false
 
 #
 # Tasks start here
@@ -51,7 +71,6 @@ end
 
 desc 'Preview on local machine (server with --auto)'
 task :preview => :clean do
-  set_url('http://localhost:4000')
   compass('compile') # so that we are sure sass has been compiled before we run the server
   compass('watch &')
   jekyll('serve --watch')
@@ -59,16 +78,17 @@ end
 task :serve => :preview
 
 
-desc 'Static build (build using filesystem)'
-task :build_static => :clean do
-  set_url(Dir.getwd + "/_site")
-  compass('compile')
-  jekyll('build')
-end
-
-
 desc 'Build for deployment (but do not deploy)'
 task :build => :clean do
+  if git_requires_attention then
+    puts "\n\nWarning! It seems that the repository is not up to date (you either need to commit and push or pull)"
+    puts "Deploying before committing might cause a regression of the website (at this or the next deploy).\n\n"
+    puts "Are you sure you want to continue? [Y|n]"
+
+    ans = STDIN.gets.chomp
+    break if ans != 'Y' 
+  end
+
   if rake_running then
     puts "\n\nWarning! An instance of rake seems to be running (it might not be *this* Rakefile, however).\n"
     puts "Building while running other tasks (e.g., preview), might create a website with broken links.\n\n"
@@ -78,16 +98,25 @@ task :build => :clean do
     break if ans != 'Y' 
   end
 
-  set_url($deploy_url)
   compass('compile')
-  jekyll('build')
+  jekyll('build --config _config.yml,_config_deploy.yml')
 end
 
 
 desc 'Build and deploy to remote server'
 task :deploy => :build do
-  sh "rsync -avz --delete _site/ #{$deploy_dir}"
-  File.open("_last_deploy.txt", 'w') {|f| f.write(Time.new) }
+  text = File.read('_config_deploy.yml')
+  matchdata = text.match(/^deploy_dir: (.*)$/)
+  if matchdata
+    deploy_dir = matchdata[1]
+    sh "rsync -avz --delete _site/ #{deploy_dir}"
+    time = Time.new
+    File.open("_last_deploy.txt", 'w') {|f| f.write(time) }
+    %x{git add -A && git commit -m "autopush by Rakefile at #{time}" && git push} if $git_autopush
+  else
+    puts "Error! deploy_url not found in _config_deploy.yml"
+    exit 1
+  end
 end
 
 
@@ -152,19 +181,19 @@ task :create_post, [:date, :title, :category, :content] do |t, args|
   # the condition is not really necessary anymore (since the previous
   # loop ensures the file does not exist)
   if not File.exists?(post_dir + filename) then
-      File.open(post_dir + filename, 'w') do |f|
-        f.puts "---"
-        f.puts "title: \"#{post_title}\""
-        f.puts "layout: default"
-        f.puts yaml_cat if yaml_cat != nil
-        f.puts "date: #{post_date}"
-        f.puts "---"
-        f.puts args.content if args.content != nil
-      end  
+    File.open(post_dir + filename, 'w') do |f|
+      f.puts "---"
+      f.puts "title: \"#{post_title}\""
+      f.puts "layout: default"
+      f.puts yaml_cat if yaml_cat != nil
+      f.puts "date: #{post_date}"
+      f.puts "---"
+      f.puts args.content if args.content != nil
+    end  
 
-      puts "Post created under \"#{post_dir}#{filename}\""
+    puts "Post created under \"#{post_dir}#{filename}\""
 
-      sh "open \"#{post_dir}#{filename}\"" if args.content == nil
+    sh "open \"#{post_dir}#{filename}\"" if args.content == nil
   else
     puts "A post with the same name already exists. Aborted."
   end
@@ -284,28 +313,19 @@ def rake_running
   `ps | grep 'rake' | grep -v 'grep' | wc -l`.to_i > 1
 end
 
-# set the url variable in _config.yml (for deployment)
-# set also the display_path variable if present (used by japr)
-def set_url(url)
-  if $deploy_url != nil
-    config_filename = "_config.yml"
-    text = File.read(config_filename)
-    url_directive = Regexp.new(/^url: .*$/)
-    if text.match(url_directive)
-      text = text.gsub(url_directive, "url: #{url}")
-    else
-      text = text + "\nurl: #{url}"
-    end
+def git_local_diffs
+  %x{git diff --name-only} != ""
+end
 
-    # for japr (Jekyll asset bundler)
-    display_path_directive = Regexp.new(/^[ ]+display_path: .*$/)
-    if text.match(display_path_directive)
-      # if the deploy url has a subdirectory, set display_path to the subdir + assets
-      path = url.match(/http:\/\/[^\/]+\//) ? File.join(url.gsub(/http:\/\/[^\/]+\//, ""), "assets") : nil
-      text = text.gsub(display_path_directive, "  display_path: #{path}")
-    end
+def git_remote_diffs
+  %x{git fetch}
+  %x{git revparse origin} != %x{git revparse origin/master}
+end
 
-    File.open(config_filename, "w") { |file| file << text }
-  end
-end 
+def git_repo?
+  %x{git status} != ""
+end
 
+def git_requires_attention
+  $git_check and git_repo? and git_remote_diffs
+end

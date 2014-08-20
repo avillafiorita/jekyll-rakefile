@@ -1,0 +1,6 @@
+# put here any directive needed only when deploying
+# a special deploy_dir variable specifies the deployment location using rsync
+
+baseurl: http://www.example.com/some/subdir/
+deploy_dir: user@example.com:/some/location/where/to/deploy
+
