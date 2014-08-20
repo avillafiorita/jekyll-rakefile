@@ -2,40 +2,55 @@ h1. What it is
 
 A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com websites.
 
-Jekyll has introduced many improvements since this Rakefile was first started.  There are, therefore, some overlaps with functions now natively provided by Jekyll, like, for instance, support for compass compilation and deployment on non-root urls.  You might want to have a look at the Jekyll documentation before deciding whether this Rakefile is for you.
+The main features of this rakefile are:
 
-This rakefile still has its uses if you are deploying your Jekyll websites using rsync on non-root urls.
+* Deployment through rsync 
+* Ready-made tasks for common operations (e.g., creating a post, checking links, listing changes sine last deploy)
+* Management of different configurations, one for previewing and another for deploying (it simplifies deployment on non-root URLs)
+* Support for compass compilation
+* Integration with @git@: check there are no upstream changes before deploying; git commit and push on publication
+
+Notice that "Jekyll":http://jekyllrb.com has introduced many new features since this Rakefile was first released.  One, for instance, is support for compass compilation; another is improved documentation related to deployment on non-root urls.  This Rakefile is quite configurable in the functions it provides, so you might still find it useful, even if you are using some of the new features provided by "Jekyll":http://jekyllrb.com or even if you are deploying your website using "Github pages":https://pages.github.com/.
 
 h1. Installation
 
 1. Download this repository
-2. Put the files in your jekyll installation
-3. Set the variables in @_rake_configuration.yml@
+2. Put the files in your "jekyll":http://jekyllrb.com website directory
+3. If needed, change the values of the variables in @_rake_configuration.yml@
 4. Start using it!
 
-*Note.* I use two separate files to keep the @Rakefile@ independent of the configuration; it helps when you are managing more than one website with jekyll.  However, if you prefer, you can forget about the @_rake_configuration.yml@ file and set the variables directly in the @Rakefile@.
-
-
-h1. Main Features
-
-* Management of different configurations for preview and deployment
-* Automated deployment through rsync
-* Ready-made tasks for common operations (e.g. creating a post, checking links)
-* List changes since last deploy
-* Create a post with changes since last deploy
+*Note.* The @_rake_configuration.yml@ can be safely deleted if you are using the default values or if you prefer to set the variables directly in the Rakefile.
 
 h1. Typical Usage Scenario
 
+Specify the deployment configuration in the @_config_deploy.yml@ file (see next section for details).
+
+Then use the rakefile to help perform standard operations.  For instance:
+
 <pre>
+rake create_post[,"A post"]
 rake preview
 rake deploy
 </pre>
 
 h1. Managing Deployment
 
-This Rakefile makes Jekyll read @_config.yml@ when previewing (this is rather simple, since it is the standard behavior of Jekyll).  When deploying, it makes Jekyll read the content of both @_config.yml@ and @_config_deploy.yml@.  This allows to specify different settings for deployment.
+*Relative vs. absolute URLs.*  Using relative URLs in a "Jekyll":http://jekyllrb.com site can be tricky. Think of a situation in which you are using the same layout for pages at different levels of nesting.  Relative links in the layout will be resolved differently for pages at different levels of nesting and, thus, will work only for some of the pages, while failing for others.  On the other hand, using absolute URLs in the layout might break the possibility of previewing a website, since absolute links might not solve correctly with respect to @http://localhost:4000@.  Moreover, if you want your website to remain portable, it is a good idea to make the deployment URL into a configuration variable, which can be set once and for all in a single location.
 
-Moreover, a special variable @deploy_dir@ can be used in @_config_deploy.yml@ to specify the directory where the Jekyll site has to be deployed using rsync.
+There are various possibility to address the issue mentioned above.  First, "Jekyll":http://jekyllrb.com provides a @baseurl@ configuration variable, which can be used to make all URLs absolute; the value of @baseurl@ can be overridden using a command-line argument when previewing.  Another possibility is using a "Jekyll":http://jekyllrb.com plugin, which helps resolving the URLs of assets.  A third possibility, in fact used by previous versions of this Rakefile, is defining a variable, e.g. @url@ and set this variable in @_config.yml@ to the desired URL when deploying and to @http://localhost:4000@ when previewing.  This ensures that URLs are correctly resolved in both environments, but it requires to keep changing @_config.yml@.
+
+The problem of setting variables in one way when previewing and in another when deploying, however, is quite general. For instance, if you use "JAPR":https://github.com/kitsched/japr, you might want to compile the assets only when deploying and leave them unbundled when debugging/previewing.  This can be achieved setting the "JAPR":https://github.com/kitsched/japr's @bundle@ variable, which needs to be set to @false@ when previewing and to @true@ when deploying.
+
+*Specifying the configuration for deployment.* This Rakefile, thus, takes inspiration to the different environments provided by Ruby on Rails and allows users to specify deployment-specific settings in a @_config_deploy.yml@ file, which is used only when deploying a website.
+
+More in details, when running:
+
+* @rake preview@, the Rakefile instructs "Jekyll":http://jekyllrb.com to read the @_config.yml@ file only
+* @rake deploy@, the Rakefile instructs "Jekyll":http://jekyllrb.com to read the content of both @_config.yml@ and @_config_deploy.yml@
+
+This allows to provide specific settings for deployment, overriding those set in @_config.yml@, if necessary.
+
+*Rsync* As a bonus, the Rakefile manages deployment through @rsync@.  A special variable @deploy_dir@ can be defined in @_config_deploy.yml@, to specify the directory where the "Jekyll":http://jekyllrb.com site has to be deployed using rsync.
 
 For instance, @_config_deploy.yml@ could look like:
 
@@ -44,12 +59,19 @@ baseurl: http://www.example.com/some/subdir
 deploy_dir: webuser@example.com:/some/directory
 </pre>
 
-Previous versions of this Rakefile used the variable @site.url@ for specifying the url.  You can keep the old convention, simply by replacing @baseurl@ with @url@ in @_config_deploy.yml@.  I.e.:
+If you prefer to use @url@ instead of @baseulr@,the @_config_deploy.yml@ will look like:
 
 <pre>
-baseurl: http://www.example.com/some/subdir
+url: http://www.example.com/some/subdir
 deploy_dir: webuser@example.com:/some/directory
 </pre>
+
+h1. Integration with Git
+
+If you are using @git@ to manage the sources of your website, the simplest way to deploy a "Jekyll":http://jekyllrb.com website is with "Github pages":https://pages.github.com/.  The second best solution is defining a @post-commit@ hook (once again, look at Jekyll's documentation).  In both cases, in fact, the deployment of the website is subordinated to a successful push on the default remote.  This ensures that websites can be deployed only when the version being pushed builds upon the latest version committed on the repository.  If this check is not performed, the risk is deploying on the web an old version of the repository.  However, there are situations in which these solutions are not feasible.
+
+If you use @git@ to control the sources of your "Jekyll":http://jekyllrb.com website, *this Rakefile can check the status of the default remote before deploying and, optionally, commit and push changes to the default remote after deploying a website*.  The first behavior (warning if you are trying to publish an old version of your repository) is set by default.  If you want to commit and push on deploy, you need to set the variable @$git_autopush@ to @true@ in @_rake_configuration.rb@.
+
 
 h1. Commands
 
@@ -59,7 +81,7 @@ The commands made available are:
 rake build                                     # Build for deployment (but do not deploy)
 rake check_links                               # Check links for site already running on localhost:4000
 rake clean                                     # Clean up generated site
-rake create_post[title,date,category,content]  # Create a post
+rake create_post[date,title,category,content]  # Create a post
 rake deploy                                    # Build and deploy to remote server
 rake list_changes                              # Print the file changed since last deploy
 rake post_changes                              # Create a post listing all changes since last deploy
@@ -68,7 +90,7 @@ rake preview                                   # Preview on local machine (serve
 
 h1. Change Log
 
-* version 2.0 changes quite radically the interface, exploiting some of the changes made to Jekyll.  The @Rakefile@ does not mess up with @_config.yml@ anymore, but it expects a @_config_deploy.yml@ file to contain the deployment directives, including the @deploy_dir@ (using rsync syntax).  Integration with @git@ checks that the local repository is in sync with the remote repository and optionally pushes all changes to the repository after a commit.
+* version 2.0 changes quite radically the behaviour, exploiting some of the changes made to "Jekyll":http://jekyllrb.com.  The @Rakefile@ does not mess up with @_config.yml@ anymore, but it expects a @_config_deploy.yml@ file to contain the deployment directives.  The value of $deploy_dir$ is now specified in @_config_deploy.yml@; this is done to achieve the following goals: keeping the configuration variables together; support (in the future) multiple deployment configurations; deleting the @_rake_configuration.rb@ file, if the default settings are ok.  Integration with @git@ checks that the local repository is in sync with the remote repository and optionally pushes all changes to the repository after a commit.
 
 h1. Caveats
 
