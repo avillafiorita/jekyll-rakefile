@@ -98,34 +98,39 @@ task :create_post, [:date, :title, :category, :content] do |t, args|
     puts "Usage: create_post[date,title,category,content]"
     puts "DATE and CATEGORY are optional"
     puts "DATE is in the form: YYYY-MM-DD; use nil or empty for today's date"
+    puts "CATEGORY is a string; nil or empty for no category"
     exit 1
   end
-  if (args.date != nil and args.date != "" and args.date != "nil" and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
+  if (args.date != nil and args.date != "nil" and args.date != "" and args.date.match(/[0-9]+-[0-9]+-[0-9]+/) == nil) then
     puts "Error: date not understood"
     puts "Usage: create_post[date,title,category,content]"
     puts "DATE and CATEGORY are optional"
     puts "DATE is in the form: YYYY-MM-DD; use nil or the empty string for today's date"
+    puts "CATEGORY is a string; nil or empty for no category"
     puts ""
-    puts "Examples: create_post[\"\",\"title\"]"
-    puts "          create_post[nil,\"title\"]"
-    puts "          create_post[,\"title\"]"
-    puts "          create_post[#{Time.new.strftime("%Y-%m-%d")},\"title\"]"
+
+    title = args.title || "title"
+
+    puts "Examples: create_post[\"\",\"#{args.title}\"]"
+    puts "          create_post[nil,\"#{args.title}\"]"
+    puts "          create_post[,\"#{args.title}\"]"
+    puts "          create_post[#{Time.new.strftime("%Y-%m-%d")},\"#{args.title}\"]"
     exit 1
   end
 
-  post_title= args.title
-  post_date= (args.date != "" and args.date != "nil") ? args.date : Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
+  post_title = args.title
+  post_date = (args.date != "" and args.date != "nil") ? args.date : Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
 
   # the destination directory is <<category>>/$post_dir, if category is non-nil
   # and the directory exists; $post_dir otherwise (a category tag is added in
   # the post body, in this case)
-  category = args.category
-  if category and Dir.exists?(File.join(category, "_posts")) then
-    post_dir = File.join(category, "_posts")
+  post_category = args.category
+  if post_category and Dir.exists?(File.join(post_category, $post_dir)) then
+    post_dir = File.join(post_category, $post_dir)
     yaml_cat = nil
   else
     post_dir = $post_dir
-    yaml_cat = "category: #{category}\n"
+    yaml_cat = post_category ? "category: #{post_category}\n" : nil
   end
 
   def slugify (title)
@@ -133,14 +138,14 @@ task :create_post, [:date, :title, :category, :content] do |t, args|
     return title.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
   end
 
-  filename = post_date[0..9] +"-"+ slugify( post_title ) + $post_ext
+  filename = post_date[0..9] + "-" + slugify(post_title) + $post_ext
 
   # generate a unique filename appending a number
   i = 1
   while File.exists?(post_dir + filename) do
-    filename = post_date[0..9] + "-" + 
-               post_title.gsub(' ', '_') + "-" + i.to_s + 
-               ".textile"
+    filename = post_date[0..9] + "-" +
+               File.basename(slugify(post_title)) + "-" + i.to_s +
+               $post_ext 
     i += 1
   end
 
