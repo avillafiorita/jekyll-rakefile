@@ -79,15 +79,9 @@ task :serve => :preview
 
 
 desc 'Build for deployment (but do not deploy)'
-task :build => :clean do
-  if git_requires_attention then
-    puts "\n\nWarning! It seems that the repository is not up to date (you either need to commit and push or pull)"
-    puts "Deploying before committing might cause a regression of the website (at this or the next deploy).\n\n"
-    puts "Are you sure you want to continue? [Y|n]"
-
-    ans = STDIN.gets.chomp
-    break if ans != 'Y' 
-  end
+task :build, [:deployment_configuration] => :clean do |t, args|
+  args.with_defaults(:deployment_configuration => 'deploy')
+  config_file = "_config_#{args[:deployment_configuration]}.yml"
 
   if rake_running then
     puts "\n\nWarning! An instance of rake seems to be running (it might not be *this* Rakefile, however).\n"
@@ -95,19 +89,33 @@ task :build => :clean do
     puts "Are you sure you want to continue? [Y|n]"
 
     ans = STDIN.gets.chomp
-    break if ans != 'Y' 
+    exit if ans != 'Y' 
   end
 
   compass('compile')
-  jekyll('build --config _config.yml,_config_deploy.yml')
+  jekyll("build --config _config.yml,#{config_file}")
 end
 
 
 desc 'Build and deploy to remote server'
-task :deploy => :build do
-  text = File.read('_config_deploy.yml')
+task :deploy, [:deployment_configuration] => :build do |t, args|
+  args.with_defaults(:deployment_configuration => 'deploy')
+  config_file = "_config_#{args[:deployment_configuration]}.yml"
+
+  text = File.read("_config_#{args[:deployment_configuration]}.yml")
   matchdata = text.match(/^deploy_dir: (.*)$/)
   if matchdata
+
+    if git_requires_attention then
+      puts "\n\nWarning! It seems that the local repository is not in sync with the remote.\n"
+      puts "This could be ok if the local version is more recent than the remote repository.\n"
+      puts "Deploying before committing might cause a regression of the website (at this or the next deploy).\n\n"
+      puts "Are you sure you want to continue? [Y|n]"
+
+      ans = STDIN.gets.chomp
+      exit if ans != 'Y' 
+    end
+
     deploy_dir = matchdata[1]
     sh "rsync -avz --delete _site/ #{deploy_dir}"
     time = Time.new
@@ -319,7 +327,7 @@ end
 
 def git_remote_diffs
   %x{git fetch}
-  %x{git revparse origin} != %x{git revparse origin/master}
+  %x{git rev-parse master} != %x{git rev-parse origin/master}
 end
 
 def git_repo?

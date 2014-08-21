@@ -46,9 +46,14 @@ The problem of setting variables in one way when previewing and in another when 
 More in details, when running:
 
 * @rake preview@, the Rakefile instructs "Jekyll":http://jekyllrb.com to read the @_config.yml@ file only
-* @rake deploy@, the Rakefile instructs "Jekyll":http://jekyllrb.com to read the content of both @_config.yml@ and @_config_deploy.yml@
+* @rake deploy@ (or @rake build@), the Rakefile instructs "Jekyll":http://jekyllrb.com to read the content of both @_config.yml@ and @_config_deploy.yml@
 
 This allows to provide specific settings for deployment, overriding those set in @_config.yml@, if necessary.
+
+Notice that you can also pass an optional argument to @rake deploy@ (@rake build@), which specifies the environment you want to use.  Thus, for instance:
+
+* @rake build[testing]@ will instruct "Jekyll":http://jekyllrb.com to read the content of both @_config.yml@ and @_config_testing.yml@.  Of course you can replace @testing@ with any environment you prefer.  This, for instance, allows you to mirror the same website on different machines or to test a deployment before actually making your website available.
+
 
 *Rsync* As a bonus, the Rakefile manages deployment through @rsync@.  A special variable @deploy_dir@ can be defined in @_config_deploy.yml@, to specify the directory where the "Jekyll":http://jekyllrb.com site has to be deployed using rsync.
 
@@ -90,7 +95,7 @@ rake preview                                   # Preview on local machine (serve
 
 h1. Change Log
 
-* version 2.0 changes quite radically the behaviour, exploiting some of the changes made to "Jekyll":http://jekyllrb.com.  The @Rakefile@ does not mess up with @_config.yml@ anymore, but it expects a @_config_deploy.yml@ file to contain the deployment directives.  The value of $deploy_dir$ is now specified in @_config_deploy.yml@; this is done to achieve the following goals: keeping the configuration variables together; support (in the future) multiple deployment configurations; deleting the @_rake_configuration.rb@ file, if the default settings are ok.  Integration with @git@ checks that the local repository is in sync with the remote repository and optionally pushes all changes to the repository after a commit.
+* version 2.0 changes quite radically the behaviour, exploiting some of the changes made to "Jekyll":http://jekyllrb.com.  The @Rakefile@ does not mess up with @_config.yml@ anymore, but it expects a @_config_deploy.yml@ (or similar) file to specify the deployment directives.  The value of $deploy_dir$ is now specified in @_config_deploy.yml@; this allows to keep the configuration variables together; support multiple deployment configurations; give the @_rake_configuration.rb@ file up, if the default settings (compass, git check, ...) are ok.  The new git checks verify that the local repository is in sync with the remote and optionally pushes all changes to the remote after a commit.
 
 h1. Caveats
 
