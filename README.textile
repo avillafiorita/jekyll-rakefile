@@ -5,7 +5,7 @@ A Rakefile to simplify previewing and deploying "jekyll":http://jekyllrb.com web
 The main features of this rakefile are:
 
 * Deployment through rsync 
-* Ready-made tasks for common operations (e.g., creating a post, checking links, listing changes sine last deploy)
+* Ready-made tasks for common operations (e.g., creating a post, checking links, listing changes since last deploy)
 * Management of different configurations, one for previewing and another for deploying (it simplifies deployment on non-root URLs)
 * Support for compass compilation
 * Integration with @git@: check there are no upstream changes before deploying; git commit and push on publication
