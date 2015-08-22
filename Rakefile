@@ -44,9 +44,13 @@ task :default => :preview
 #
 # If set to true, the sources have to be managed by git or an error message will be issued.
 #
-# ... or load them from a file, e.g.:
-#
+# ... or load them from the configuration file, e.g.:
+# 
 load '_rake-configuration.rb' if File.exist?('_rake-configuration.rb')
+load '_rake_configuration.rb' if File.exist?('_rake_configuration.rb')
+
+# ... we are a bit redundant and allow two different file names
+
 
 #
 # --- NO NEED TO TOUCH ANYTHING BELOW THIS LINE ---
@@ -106,7 +110,7 @@ task :deploy, [:deployment_configuration] => :build do |t, args|
   matchdata = text.match(/^deploy_dir: (.*)$/)
   if matchdata
 
-    if git_requires_attention then
+    if git_requires_attention("master") then
       puts "\n\nWarning! It seems that the local repository is not in sync with the remote.\n"
       puts "This could be ok if the local version is more recent than the remote repository.\n"
       puts "Deploying before committing might cause a regression of the website (at this or the next deploy).\n\n"
@@ -127,6 +131,26 @@ task :deploy, [:deployment_configuration] => :build do |t, args|
   end
 end
 
+desc 'Build and deploy to github'
+task :deploy_github => :build do |t, args|
+  args.with_defaults(:deployment_configuration => 'deploy')
+  config_file = "_config_#{args[:deployment_configuration]}.yml"
+
+  if git_requires_attention("gh_pages") then
+    puts "\n\nWarning! It seems that the local repository is not in sync with the remote.\n"
+    puts "This could be ok if the local version is more recent than the remote repository.\n"
+    puts "Deploying before committing might cause a regression of the website (at this or the next deploy).\n\n"
+    puts "Are you sure you want to continue? [Y|n]"
+
+    ans = STDIN.gets.chomp
+    exit if ans != 'Y' 
+  end
+
+  %x{git add -A && git commit -m "autopush by Rakefile at #{time}" && git push origin gh_pages} if $git_autopush
+  
+  time = Time.new
+  File.open("_last_deploy.txt", 'w') {|f| f.write(time) }
+end
 
 desc 'Create a post'
 task :create_post, [:date, :title, :category, :content] do |t, args|
@@ -325,15 +349,15 @@ def git_local_diffs
   %x{git diff --name-only} != ""
 end
 
-def git_remote_diffs
+def git_remote_diffs branch
   %x{git fetch}
-  %x{git rev-parse master} != %x{git rev-parse origin/master}
+  %x{git rev-parse #{branch}} != %x{git rev-parse origin/#{branch}}
 end
 
 def git_repo?
   %x{git status} != ""
 end
 
-def git_requires_attention
-  $git_check and git_repo? and git_remote_diffs
+def git_requires_attention branch
+  $git_check and git_repo? and git_remote_diffs(branch)
 end
