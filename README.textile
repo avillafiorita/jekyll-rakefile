@@ -7,13 +7,13 @@ Main features:
 * Support to common tasks, such as building and previewing
 * Compass compilation and watching
 * Commands for checking links, publishing a post with a summary of the changes since last deployment
-* URL substituions, to simplify deployment to subURIs
+* URL substitutions, to simplify deployment to sub-URIs
 * Management of different configurations (similar to Rails)
 * Integration with @git@ repositories: check there are no upstream changes before deploying; commit and push on publication
-* Deployment via rsync
+* Deployment via @rsync@
 * Publishing to Github
 
-Notice that "Jekyll":http://jekyllrb.com has introduced many new features since this Rakefile was first released.  One, for instance, is support for compass compilation; another is improved documentation related to deployment on non-root urls.  This Rakefile is quite configurable in the functions it provides, so you might still find it useful, even if you are using some of the new features provided by "Jekyll":http://jekyllrb.com or even if you are deploying your website using "Github pages":https://pages.github.com/.
+Notice that "Jekyll":http://jekyllrb.com has introduced many new features since this Rakefile was first released.  One, for instance, is support for compass compilation; another is improved documentation related to deployment on non-root URLs.  This Rakefile is quite configurable in the functions it provides, so you might still find it useful, even if you are using some of the new features provided by "Jekyll":http://jekyllrb.com or even if you are deploying your website using "Github pages":https://pages.github.com/.
 
 h1. Installation
 
@@ -45,7 +45,7 @@ One way to address the issue mentioned above is using the @baseurl@ configuratio
 
 This Rakefile adopts a similar solution.  It allows users to define a variable, e.g. @url@, and set this variable in a configuration file, e.g., @_config_deploy.yml@ to the URL to be used when deploying.  The @Rakefile@ automatically uses the value read from @_config_deploy.yml@ when deploying and @http://localhost:4000@ when previewing.  This ensures that URLs are correctly resolved in all the environments.
 
-The mecahnism, which is inspired by Rails, is general and can be used to set specific sets of variables for previewing and deploying.  This is useful, for instance, when using "JAPR":https://github.com/kitsched/japr.  In fact, you might want to compile the assets only when deploying and leave them unbundled when debugging/previewing.  This can be achieved setting the "JAPR":https://github.com/kitsched/japr's @bundle@ variable, which needs to be set to @false@ when previewing and to @true@ when deploying.
+The approach, which is inspired by Rails, can be used to define different sets of variables for previewing and deploying.  This is useful, for instance, when using "JAPR":https://github.com/kitsched/japr, a plugin which allows to bundle assets.  In fact, you might want to compile the assets only when deploying and leave them unbundled when debugging/previewing.  This can be achieved setting the "JAPR":https://github.com/kitsched/japr's @bundle@ variable, which needs to be set to @false@ when previewing and to @true@ when deploying.
 
 More in details, when running:
 
@@ -63,7 +63,7 @@ h1. Deploying your Website
 
 h2. Deploying with rsync
 
-If your website is hosted by a provider which supports @rsync@, this rakefile can deploy the website for you.  More in details, a special variable @deploy_dir@ can be defined in @_config_deploy.yml@, to specify the directory where the "Jekyll":http://jekyllrb.com site has to be deployed.
+If your website is hosted by a provider which supports @rsync@, this Rakefile can deploy the website for you.  More in details, a special variable @deploy_dir@ can be defined in @_config_deploy.yml@, to specify the directory where the "Jekyll":http://jekyllrb.com site has to be deployed.
 
 For instance, @_config_deploy.yml@ could look like:
 
