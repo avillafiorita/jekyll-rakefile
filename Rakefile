@@ -45,7 +45,7 @@ task :default => :preview
 # If set to true, the sources have to be managed by git or an error message will be issued.
 #
 # ... or load them from the configuration file, e.g.:
-# 
+#
 load '_rake-configuration.rb' if File.exist?('_rake-configuration.rb')
 load '_rake_configuration.rb' if File.exist?('_rake_configuration.rb')
 
@@ -93,7 +93,7 @@ task :build, [:deployment_configuration] => :clean do |t, args|
     puts "Are you sure you want to continue? [Y|n]"
 
     ans = STDIN.gets.chomp
-    exit if ans != 'Y' 
+    exit if ans != 'Y'
   end
 
   compass('compile')
@@ -117,7 +117,7 @@ task :deploy, [:deployment_configuration] => :build do |t, args|
       puts "Are you sure you want to continue? [Y|n]"
 
       ans = STDIN.gets.chomp
-      exit if ans != 'Y' 
+      exit if ans != 'Y'
     end
 
     deploy_dir = matchdata[1]
@@ -143,11 +143,11 @@ task :deploy_github => :build do |t, args|
     puts "Are you sure you want to continue? [Y|n]"
 
     ans = STDIN.gets.chomp
-    exit if ans != 'Y' 
+    exit if ans != 'Y'
   end
 
   %x{git add -A && git commit -m "autopush by Rakefile at #{time}" && git push origin gh_pages} if $git_autopush
-  
+
   time = Time.new
   File.open("_last_deploy.txt", 'w') {|f| f.write(time) }
 end
@@ -180,7 +180,7 @@ task :create_post, [:date, :title, :category, :content] do |t, args|
   end
 
   post_title = args.title
-  post_date = (args.date != "" and args.date != "nil") ? args.date : Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
+  post_date = (args.date != "" and !args.date.nil?) ? args.date : Time.new.strftime("%Y-%m-%d %H:%M:%S %Z")
 
   # the destination directory is <<category>>/$post_dir, if category is non-nil
   # and the directory exists; $post_dir otherwise (a category tag is added in
@@ -206,7 +206,7 @@ task :create_post, [:date, :title, :category, :content] do |t, args|
   while File.exists?(post_dir + filename) do
     filename = post_date[0..9] + "-" +
                File.basename(slugify(post_title)) + "-" + i.to_s +
-               $post_ext 
+               $post_ext
     i += 1
   end
 
@@ -221,7 +221,7 @@ task :create_post, [:date, :title, :category, :content] do |t, args|
       f.puts "date: #{post_date}"
       f.puts "---"
       f.puts args.content if args.content != nil
-    end  
+    end
 
     puts "Post created under \"#{post_dir}#{filename}\""
 
@@ -253,14 +253,14 @@ end
 
 def list_file_changed
   content = "Files changed since last deploy:\n"
-  IO.popen('find * -newer _last_deploy.txt -type f') do |io| 
+  IO.popen('find * -newer _last_deploy.txt -type f') do |io|
     while (line = io.gets) do
       filename = line.chomp
       if user_visible(filename) then
         content << "* \"#{filename}\":{{site.url}}/#{file_change_ext(filename, ".html")}\n"
       end
     end
-  end 
+  end
   content
 end
 
@@ -271,12 +271,12 @@ EXCLUSION_LIST = [/.*~/, /_.*/, "javascripts?", "js", /stylesheets?/, "css", "Ra
 def user_visible(filename)
   exclusion_list = Regexp.union(EXCLUSION_LIST)
   not filename.match(exclusion_list)
-end 
+end
 
 def file_change_ext(filename, newext)
   if File.extname(filename) == ".textile" or File.extname(filename) == ".md" then
     filename.sub(File.extname(filename), newext)
-  else  
+  else
     filename
   end
 end
